@@ -48,9 +48,8 @@ export function NGOCard({ ngo }: NGOProps) {
     : Math.floor(Math.random() * ngo.goal * 0.7)
 
   // Calculate progress percentage
-  const progressPercentage = Math.min(Math.round((totalDonations / ngo.goal) * 100), 100)
+  const progressPercentage = Math.min(100, (totalDonations / ngo.goal) * 100)
 
-  // Format date
   const formattedDate = new Date(ngo.createdAt).toLocaleDateString("en-IN", {
     year: "numeric",
     month: "short",
@@ -69,6 +68,7 @@ export function NGOCard({ ngo }: NGOProps) {
       }
 
       const user = JSON.parse(userString)
+      const amount = Number.parseInt(donationAmount)
 
       const response = await fetch("/api/donations", {
         method: "POST",
@@ -76,7 +76,7 @@ export function NGOCard({ ngo }: NGOProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: donationAmount,
+          amount,
           ngoId: ngo.id,
           userId: user.id,
         }),
@@ -84,8 +84,11 @@ export function NGOCard({ ngo }: NGOProps) {
 
       if (response.ok) {
         setIsDialogOpen(false)
-        alert(`Thank you for donating ₹${Number.parseInt(donationAmount).toLocaleString()} to ${ngo.name}!`)
-        router.refresh()
+        alert(`Thank you for donating ₹${amount.toLocaleString()} to ${ngo.name}!`)
+        // Update the local state with the new donation
+        const updatedDonations = [...(ngo.donations || []), { amount }]
+        ngo.donations = updatedDonations
+        // Remove router.refresh() to prevent resetting the state
       } else {
         console.error("Failed to process donation")
       }

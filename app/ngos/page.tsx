@@ -144,7 +144,7 @@ export default function NGOsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredNGOs.map((ngo) => (
-            <NGOCard key={ngo.id} ngo={ngo} />
+            <NGOCard key={ngo.id} ngo={{ ...ngo, createdAt: new Date(ngo.createdAt) }} />
           ))}
         </div>
       )}
