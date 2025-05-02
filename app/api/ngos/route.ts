@@ -27,21 +27,33 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, description, goal, location, userId } = body
-
-    const ngo = await db.nGO.create({
+    
+    const newNGO = await db.nGO.create({
       data: {
-        name,
-        description,
-        goal: Number.parseFloat(goal),
-        location,
-        userId,
+        user: {
+          connect: {
+            id: body.userId
+          }
+        },
+        name: body.name,
+        description: body.description,
+        goal: Number(body.goal), // Convert string to number
+        location: body.location,
+        donations: {
+          create: []
+        }
       },
+      include: {
+        donations: true
+      }
     })
 
-    return NextResponse.json(ngo)
+    return NextResponse.json({ ngo: newNGO })
   } catch (error) {
     console.error("Error creating NGO:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to create NGO" },
+      { status: 500 }
+    )
   }
 }

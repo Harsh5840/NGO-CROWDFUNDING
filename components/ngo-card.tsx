@@ -36,30 +36,50 @@ interface NGOProps {
   }
 }
 
+const Images = [
+  {
+    src: "./images/ngo1.jpg",
+    alt: "NGO 1",
+  },
+  {
+    src: "./images/ngo2.jpg",
+    alt: "NGO 2",
+  },
+  {
+    src: "./images/ngo3.jpg",
+    alt: "NGO 3",
+  },
+  {
+    src: "./images/ngo4.jpg",
+    alt: "NGO 4",
+  },
+  {
+    src: "./images/ngo5.jpg",
+    alt: "NGO 5",
+  }
+]
+
 export function NGOCard({ ngo }: NGOProps) {
   const router = useRouter()
   const [donationAmount, setDonationAmount] = useState("500")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-
-  // Calculate total donations (random for demo)
-  const totalDonations = ngo.donations
-    ? ngo.donations.reduce((sum, donation) => sum + donation.amount, 0)
-    : Math.floor(Math.random() * ngo.goal * 0.7)
-
-  // Calculate progress percentage
-  const progressPercentage = Math.min(100, (totalDonations / ngo.goal) * 100)
-
-  const formattedDate = new Date(ngo.createdAt).toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+  
+  // Store donations in sessionStorage for persistence
+  const [localDonations, setLocalDonations] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem(`donations-${ngo.id}`)
+      return saved ? JSON.parse(saved) : ngo.donations || []
+    }
+    return ngo.donations || []
   })
+
+  // Calculate total donations combining both sources
+  const totalDonations = localDonations.reduce((sum: number, donation: { amount: number }) => sum + donation.amount, 0)
 
   const handleDonate = async () => {
     try {
       setIsLoading(true)
-      // Get user from session storage
       const userString = sessionStorage.getItem("user")
       if (!userString) {
         alert("Please sign in first")
@@ -85,10 +105,10 @@ export function NGOCard({ ngo }: NGOProps) {
       if (response.ok) {
         setIsDialogOpen(false)
         alert(`Thank you for donating ₹${amount.toLocaleString()} to ${ngo.name}!`)
-        // Update the local state with the new donation
-        const updatedDonations = [...(ngo.donations || []), { amount }]
-        ngo.donations = updatedDonations
-        // Remove router.refresh() to prevent resetting the state
+        const updatedDonations = [...localDonations, { amount }]
+        setLocalDonations(updatedDonations)
+        // Save to sessionStorage
+        sessionStorage.setItem(`donations-${ngo.id}`, JSON.stringify(updatedDonations))
       } else {
         console.error("Failed to process donation")
       }
@@ -103,7 +123,7 @@ export function NGOCard({ ngo }: NGOProps) {
     <Card className="h-full flex flex-col overflow-hidden transition-all duration-200 hover:shadow-lg">
       <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
         <Image
-          src="./images/logo.jpeg"
+          src={"/images/ngo1.jpg"} // Use proper image source
           alt={ngo.name}
           fill
           className="object-cover transition-transform duration-300 hover:scale-105"
@@ -128,14 +148,14 @@ export function NGOCard({ ngo }: NGOProps) {
               Goal: <span className="font-semibold">₹{ngo.goal.toLocaleString()}</span>
             </span>
           </div>
-          <Progress value={progressPercentage} className="h-2" />
-          <p className="text-xs text-right text-gray-500">{progressPercentage}% Complete</p>
+          <Progress value={(totalDonations / ngo.goal) * 100} className="h-2" />
+          <p className="text-xs text-right text-gray-500">{((totalDonations / ngo.goal) * 100).toFixed(1)}% Complete</p>
         </div>
 
         <div className="flex justify-between text-xs text-gray-500 pt-2">
           <div className="flex items-center">
             <Calendar className="h-3 w-3 mr-1" />
-            {formattedDate}
+            {new Date(ngo.createdAt).toLocaleDateString()}
           </div>
           <div className="flex items-center">
             <Users className="h-3 w-3 mr-1" />

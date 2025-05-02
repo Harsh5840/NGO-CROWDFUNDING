@@ -25,6 +25,12 @@ async function main() {
       goal: 500000,
       location: "Mumbai, Maharashtra",
       userId: dummyUser.id,
+      donations: {
+        create: [
+          { amount: 100000 },
+          { amount: 75000 }
+        ]
+      }
     },
     {
       name: "Education For All",
@@ -71,8 +77,36 @@ async function main() {
   for (const ngo of dummyNGOs) {
     const createdNGO = await prisma.nGO.upsert({
       where: { name_userId: { name: ngo.name, userId: ngo.userId } },
-      update: ngo,
-      create: ngo,
+      update: {
+        name: ngo.name,
+        description: ngo.description,
+        goal: ngo.goal,
+        location: ngo.location,
+        userId: ngo.userId,
+        ...(ngo.donations && {
+          donations: {
+            create: ngo.donations.create.map(donation => ({
+              amount: donation.amount,
+              user: { connect: { id: dummyUser.id } }
+            }))
+          }
+        })
+      },
+      create: {
+        name: ngo.name,
+        description: ngo.description,
+        goal: ngo.goal,
+        location: ngo.location,
+        userId: ngo.userId,
+        ...(ngo.donations && {
+          donations: {
+            create: ngo.donations.create.map(donation => ({
+              amount: donation.amount,
+              user: { connect: { id: dummyUser.id } }
+            }))
+          }
+        })
+      },
     })
     console.log(`Created NGO: ${createdNGO.name}`)
   }
